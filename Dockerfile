@@ -1,8 +1,15 @@
-# syntax=docker/dockerfile:1
+# Stage 1: Build the React.js Application
+ARG NODE_VERSION=16-alpine
+FROM node:${NODE_VERSION} AS builder
 
-FROM node:22-alpine
 WORKDIR /app
+COPY package.json package-lock.json ./
+RUN npm install
 COPY . .
-RUN yarn install --production
-CMD ["node", "src/index.js"]
-EXPOSE 3000
+RUN npm run build
+
+# Stage 2: Serve Static Files with Nginx
+FROM nginx:alpine
+COPY --from=builder /app/build /usr/share/nginx/html
+EXPOSE 80
+CMD ["nginx", "-g", "daemon off;"]
